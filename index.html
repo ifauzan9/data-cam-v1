@@ -1,0 +1,1189 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>DATA CAM - Benar atau Salah?</title>
+<style>
+:root{
+  --bg:#07101d; --panel:#101a2d; --panel2:#17233d; --text:#f8fbff; --muted:#bcc8da;
+  --true:#20b86f; --false:#e5525d; --yellow:#ffd166; --blue:#2d7de1;
+}
+*{box-sizing:border-box} html,body{margin:0;min-height:100%;font-family:Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
+button,select,input{font:inherit} button{touch-action:manipulation}
+.app{min-height:100vh;display:flex;flex-direction:column;background:linear-gradient(180deg,#081221,#060c16)}
+.topbar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;padding:11px 16px;background:#08101d;border-bottom:1px solid #ffffff24;z-index:20}
+.brand{font-weight:1000;font-size:clamp(17px,2vw,27px)} .brand b{color:var(--yellow)}
+.progress{text-align:center;font-weight:900;font-size:clamp(14px,1.4vw,19px)}
+.top-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.btn{border:1px solid #ffffff2b;border-radius:14px;padding:10px 16px;min-height:48px;background:#182540;color:#fff;font-weight:900;cursor:pointer}
+.btn:hover{filter:brightness(1.08)} .btn:active{transform:translateY(1px)} .btn:disabled{opacity:.45;cursor:not-allowed;transform:none;filter:none}
+.btn.primary{background:#1767cb}.btn.good{background:#137849}.btn.warn{background:#8d6420}.btn.ghost{background:#ffffff12}
+.stage{position:relative;flex:1;min-height:610px;overflow:hidden;background:#111a2c;isolation:isolate}
+.video-wrap,.fallback{position:absolute;inset:0}
+video{width:100%;height:100%;object-fit:cover;background:#111a2c;transform:scaleX(-1)}
+.fallback{display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;color:#d9e2f0;background:radial-gradient(circle at 25% 30%,#20b86f20,transparent 36%),radial-gradient(circle at 75% 30%,#e5525d20,transparent 36%),#111a2c}
+.side{position:absolute;top:0;bottom:0;display:flex;align-items:flex-end;justify-content:center;padding:25px 14px 36px;pointer-events:none;transition:background .25s,opacity .25s,box-shadow .25s;z-index:2}
+.side.true{background:linear-gradient(90deg,#20b86f54,#20b86f18)} .side.false{background:linear-gradient(270deg,#e5525d54,#e5525d18)}
+.side-label{font-size:clamp(38px,6vw,90px);font-weight:1000;text-shadow:0 4px 22px #000;letter-spacing:2px;user-select:none}
+.side.true .side-label{color:#dcffed}.side.false .side-label{color:#ffe4e6}
+.side.correct{background:#20b86f9b!important;box-shadow:inset 0 0 0 7px #d8ffea}.side.wrong{background:#e5525d63!important;opacity:.62}
+.divider{position:absolute;top:0;bottom:0;width:7px;background:#fffffff2;box-shadow:0 0 20px #ffffff45;z-index:3;pointer-events:none}
+.divider:before{content:"GARIS TENGAH";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-90deg);white-space:nowrap;padding:7px 12px;border-radius:999px;background:#050a14cc;color:#fff;font-size:12px;font-weight:900;letter-spacing:1px}
+.question-card{position:absolute;left:50%;top:20px;transform:translateX(-50%);width:min(88%,1120px);padding:16px 22px 19px;border-radius:22px;background:#07101be8;border:2px solid #ffffff30;text-align:center;z-index:5;backdrop-filter:blur(5px)}
+.q-label{font-size:clamp(13px,1.4vw,18px);font-weight:1000;color:var(--yellow);letter-spacing:1.3px}.question{margin-top:6px;font-size:clamp(27px,4vw,58px);line-height:1.14;font-weight:1000}
+.question.hidden-text{color:#d4dcec;font-size:clamp(22px,3vw,40px)}
+.timer{position:absolute;left:50%;top:50%;transform:translate(-50%,-45%);z-index:7;width:clamp(125px,16vw,215px);height:clamp(125px,16vw,215px);border-radius:50%;display:flex;align-items:center;justify-content:center;background:#07101bdd;border:8px solid #ffffffed;font-size:clamp(66px,9vw,132px);font-weight:1000;text-shadow:0 3px 14px #000;box-shadow:0 15px 48px #0007;transition:.18s}
+.timer.urgent{color:var(--yellow);border-color:var(--yellow);transform:translate(-50%,-45%) scale(1.08)}
+.reveal{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:10;width:min(86%,900px);padding:25px 28px;border-radius:24px;background:#07101bf5;border:2px solid #ffffff36;text-align:center;box-shadow:0 18px 60px #0008;display:none}
+.reveal.show{display:block;animation:pop .25s ease}.answer-title{font-size:clamp(28px,4vw,54px);font-weight:1000}.answer-text{margin-top:8px;font-size:clamp(18px,2vw,29px);font-weight:800;color:#e7eef9;line-height:1.35}
+@keyframes pop{from{opacity:0;transform:translate(-50%,-50%) scale(.93)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+.controls{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;padding:11px 15px 15px;background:#08101d;border-top:1px solid #ffffff24}
+.left,.center,.right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.center{justify-content:center}.right{justify-content:flex-end}
+.timer-setting{display:flex;gap:7px;align-items:center;padding:6px 8px;border-radius:13px;background:#151f35;border:1px solid #ffffff1e}.timer-setting label{font-size:14px;font-weight:900}.timer-setting select{background:#0d1628;color:#fff;border:1px solid #ffffff2c;border-radius:9px;padding:9px 11px;font-weight:900}
+.status{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:7px 14px;background:#060b14;color:#bdc8da;font-size:13px}.ok{color:#81e9b2;font-weight:900}.warntext{color:#ffd166;font-weight:900}.bad{color:#ff9ba2;font-weight:900}
+.overlay{position:absolute;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;padding:22px;background:#050b14f4}.overlay.hidden{display:none}
+.setup{width:min(900px,96%);padding:25px;border-radius:26px;background:#111b30;border:1px solid #ffffff24;box-shadow:0 20px 70px #0008}
+.setup h1{margin:0 0 8px;font-size:clamp(28px,4vw,50px)}.setup p{margin:0;color:#c8d2e2;font-size:clamp(15px,1.6vw,20px);line-height:1.5}
+.setup-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:18px}.panel{padding:16px;border-radius:18px;background:#0b1426;border:1px solid #ffffff1e}.panel h3{margin:0 0 11px}.field{display:grid;gap:7px;margin-top:10px}.field select{width:100%;background:#151f35;color:#fff;border:1px solid #ffffff2c;border-radius:11px;padding:11px}.range{display:flex;align-items:center;gap:10px}.range input{width:100%}.range output{min-width:50px;text-align:center;font-weight:1000}
+.setup-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}.privacy{margin-top:15px;padding:11px 13px;border-radius:13px;background:#0d2533;color:#d9f3ff;font-size:14px;line-height:1.45}
+
+/* Kelola soal */
+.question-manager-overlay{
+  position:absolute;inset:0;z-index:45;display:flex;align-items:flex-start;justify-content:center;
+  padding:18px;background:#050b14f7;overflow-y:auto
+}
+.question-manager-overlay.hidden{display:none}
+.question-manager{
+  width:min(1120px,98%);margin:auto;padding:22px;border-radius:24px;background:#101a2d;
+  border:1px solid #ffffff24;box-shadow:0 22px 70px #0009
+}
+.manager-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.manager-head h2{margin:0;font-size:clamp(26px,3vw,40px)}
+.manager-head p{margin:5px 0 0;color:#c7d2e2}
+.manager-grid{display:grid;grid-template-columns:minmax(300px,.82fr) minmax(360px,1.18fr);gap:16px;align-items:start}
+.manager-panel{background:#0b1426;border:1px solid #ffffff1f;border-radius:18px;padding:16px}
+.manager-panel h3{margin:0 0 12px}
+.manager-field{display:grid;gap:7px;margin:12px 0}
+.manager-field label{font-weight:900}
+.manager-field textarea,.manager-field select{
+  width:100%;border:1px solid #ffffff2c;border-radius:12px;background:#151f35;color:#fff;
+  padding:12px;font-size:16px
+}
+.manager-field textarea{min-height:96px;resize:vertical}
+.manager-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.manager-note{font-size:13px;color:#bfc9da;line-height:1.45;margin-top:10px}
+.question-list{display:grid;gap:9px;max-height:520px;overflow-y:auto;padding-right:4px}
+.question-item{
+  border:1px solid #ffffff20;border-radius:14px;background:#111d33;padding:12px;
+  display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center
+}
+.question-num{
+  width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:#ffffff12;font-weight:1000
+}
+.question-main{min-width:0}
+.question-text{font-weight:900;line-height:1.35;word-break:break-word}
+.question-meta{margin-top:5px;color:#bdc8da;font-size:13px;line-height:1.35}
+.answer-badge{display:inline-block;border-radius:999px;padding:3px 8px;font-weight:1000;font-size:12px;margin-right:6px}
+.answer-badge.true{background:#20b86f2e;color:#9af0bf;border:1px solid #20b86f66}
+.answer-badge.false{background:#e5525d2e;color:#ffb4ba;border:1px solid #e5525d66}
+.item-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.mini-btn{min-height:40px;padding:8px 11px;border-radius:10px;border:1px solid #ffffff22;background:#1a2946;color:#fff;font-weight:900;cursor:pointer}
+.mini-btn.danger{background:#7f2730}
+.manager-count{color:var(--yellow);font-weight:1000}
+.empty-list{padding:26px;text-align:center;color:#c1cada;border:1px dashed #ffffff28;border-radius:14px}
+
+@media(max-width:850px){.manager-grid{grid-template-columns:1fr}.question-list{max-height:none}.question-item{grid-template-columns:auto 1fr}.item-actions{grid-column:1/-1;justify-content:flex-end}.topbar{grid-template-columns:1fr;justify-items:center}.top-actions{justify-content:center}.controls{grid-template-columns:1fr}.left,.center,.right{justify-content:center}.setup-grid{grid-template-columns:1fr}.stage{min-height:560px}}
+@media(max-width:520px){.question-card{width:94%}.side-label{font-size:34px}.stage{min-height:520px}.btn{width:100%}.left,.center,.right{display:grid;grid-template-columns:1fr}.timer-setting{justify-content:space-between}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* =========================================================
+   OPTIMASI PID 75 INCH — FULL 1 LAYAR 16:9 TANPA PAGE SCROLL
+   Cocok untuk resolusi 1920x1080 maupun 3840x2160.
+   ========================================================= */
+html, body{
+  width:100%;
+  height:100%;
+  min-height:0 !important;
+  overflow:hidden !important;
+}
+body{
+  overscroll-behavior:none;
+}
+.app{
+  width:100vw;
+  height:100vh;
+  min-height:0 !important;
+  overflow:hidden !important;
+  display:grid !important;
+  grid-template-rows:7.5vh minmax(0,1fr) 9vh 3.2vh;
+}
+.topbar{
+  min-height:0;
+  height:7.5vh;
+  padding:.75vh 1vw;
+  gap:.7vw;
+  grid-template-columns:1fr auto 1fr;
+}
+.brand{
+  font-size:clamp(18px,1.55vw,34px);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.progress{
+  font-size:clamp(14px,1.05vw,22px);
+  white-space:nowrap;
+}
+.top-actions{
+  gap:.45vw;
+  flex-wrap:nowrap !important;
+}
+.btn{
+  min-height:0 !important;
+  height:4.6vh;
+  padding:.45vh .72vw;
+  border-radius:12px;
+  font-size:clamp(12px,.72vw,16px);
+  white-space:nowrap;
+}
+.stage{
+  flex:none !important;
+  min-height:0 !important;
+  height:auto !important;
+  overflow:hidden !important;
+}
+.question-card{
+  top:1.3vh;
+  width:min(90%,1400px);
+  padding:1.1vh 1.2vw 1.25vh;
+  border-radius:20px;
+}
+.q-label{
+  font-size:clamp(12px,.8vw,17px);
+}
+.question{
+  margin-top:.45vh;
+  font-size:clamp(26px,3.2vw,64px);
+  line-height:1.08;
+}
+.question.hidden-text{
+  font-size:clamp(22px,2.4vw,46px);
+}
+.timer{
+  top:51%;
+  width:clamp(120px,12vw,230px);
+  height:clamp(120px,12vw,230px);
+  border-width:clamp(5px,.42vw,8px);
+  font-size:clamp(64px,7vw,136px);
+}
+.reveal{
+  top:51%;
+  width:min(82%,1100px);
+  padding:2vh 1.5vw;
+}
+.answer-title{
+  font-size:clamp(30px,3vw,58px);
+}
+.answer-text{
+  margin-top:.8vh;
+  font-size:clamp(18px,1.55vw,31px);
+  line-height:1.25;
+}
+.side{
+  padding:1vh 1vw 2.2vh;
+}
+.side-label{
+  font-size:clamp(42px,5vw,100px);
+}
+.divider{
+  width:clamp(5px,.35vw,8px);
+}
+.divider:before{
+  font-size:clamp(10px,.58vw,13px);
+  padding:.5vh .5vw;
+}
+.controls{
+  min-height:0;
+  height:9vh;
+  padding:.8vh 1vw;
+  grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+  gap:.55vw;
+  overflow:hidden;
+}
+.left,.center,.right{
+  min-width:0;
+  gap:.42vw;
+  flex-wrap:nowrap !important;
+}
+.left{justify-content:flex-start}
+.center{justify-content:center}
+.right{justify-content:flex-end}
+.timer-setting{
+  height:4.6vh;
+  min-height:0;
+  padding:.3vh .5vw;
+  gap:.4vw;
+}
+.timer-setting label{
+  font-size:clamp(11px,.66vw,14px);
+  white-space:nowrap;
+}
+.timer-setting select{
+  height:3.6vh;
+  min-height:32px;
+  padding:0 .55vw;
+  font-size:clamp(11px,.66vw,14px);
+}
+.status{
+  min-height:0;
+  height:3.2vh;
+  padding:.3vh 1vw;
+  align-items:center;
+  flex-wrap:nowrap !important;
+  overflow:hidden;
+  font-size:clamp(10px,.58vw,13px);
+}
+.status span{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* Setup awal agar selalu muat pada 1 layar PID */
+.overlay{
+  inset:0;
+  padding:1.5vh 1.2vw;
+  overflow:hidden !important;
+}
+.setup{
+  width:min(74vw,1320px);
+  max-height:96%;
+  padding:1.6vh 1.4vw;
+  border-radius:22px;
+  overflow:hidden;
+}
+.setup h1{
+  margin:0 0 .55vh;
+  font-size:clamp(26px,2.55vw,52px);
+}
+.setup p{
+  font-size:clamp(13px,1vw,20px);
+  line-height:1.3;
+}
+.setup-grid{
+  gap:.8vw;
+  margin-top:1.2vh;
+}
+.panel{
+  padding:1.1vh .9vw;
+  border-radius:16px;
+}
+.panel h3{
+  margin:0 0 .65vh;
+  font-size:clamp(15px,1vw,21px);
+}
+.field{
+  gap:.35vh;
+  margin-top:.7vh;
+}
+.field label{
+  font-size:clamp(11px,.7vw,15px);
+}
+.field select{
+  height:4.2vh;
+  min-height:34px;
+  padding:0 .6vw;
+  font-size:clamp(12px,.72vw,15px);
+}
+.range{
+  gap:.5vw;
+}
+.range output{
+  min-width:3vw;
+  font-size:clamp(11px,.7vw,15px);
+}
+.privacy{
+  margin-top:1vh;
+  padding:.75vh .8vw;
+  font-size:clamp(11px,.7vw,14px);
+  line-height:1.25;
+}
+.setup-actions{
+  margin-top:1vh;
+  gap:.5vw;
+  flex-wrap:nowrap;
+}
+
+/* Kelola soal: tetap full-screen tanpa page scroll.
+   Daftar soal boleh bergulir DI DALAM panel, bukan seluruh halaman. */
+.question-manager-overlay{
+  inset:0;
+  padding:1.2vh 1vw;
+  overflow:hidden !important;
+  align-items:center;
+}
+.question-manager{
+  width:min(88vw,1650px);
+  height:min(92%,920px);
+  max-height:92%;
+  margin:0;
+  padding:1.2vh 1vw;
+  overflow:hidden;
+  display:grid;
+  grid-template-rows:auto minmax(0,1fr);
+}
+.manager-head{
+  margin-bottom:.8vh;
+  gap:.6vw;
+  flex-wrap:nowrap;
+}
+.manager-head h2{
+  font-size:clamp(23px,1.8vw,38px);
+}
+.manager-head p{
+  margin:.3vh 0 0;
+  font-size:clamp(11px,.68vw,14px);
+}
+.manager-grid{
+  min-height:0;
+  grid-template-columns:.78fr 1.22fr;
+  gap:.8vw;
+  align-items:stretch;
+}
+.manager-panel{
+  min-height:0;
+  padding:1vh .8vw;
+  overflow:hidden;
+}
+.manager-panel h3{
+  margin:0 0 .65vh;
+  font-size:clamp(14px,.9vw,19px);
+}
+.manager-field{
+  gap:.35vh;
+  margin:.7vh 0;
+}
+.manager-field label{
+  font-size:clamp(11px,.7vw,14px);
+}
+.manager-field textarea,.manager-field select{
+  padding:.65vh .65vw;
+  font-size:clamp(12px,.72vw,15px);
+}
+.manager-field textarea{
+  min-height:0;
+  height:8vh;
+  resize:none;
+}
+.manager-actions{
+  gap:.45vw;
+  margin-top:.7vh;
+  flex-wrap:nowrap;
+}
+.manager-note{
+  margin-top:.7vh;
+  font-size:clamp(10px,.62vw,13px);
+  line-height:1.25;
+}
+.question-list{
+  height:calc(100% - 4.5vh);
+  max-height:none;
+  min-height:0;
+  overflow-y:auto;
+  padding-right:.3vw;
+  gap:.55vh;
+}
+.question-item{
+  padding:.7vh .6vw;
+  gap:.55vw;
+  border-radius:12px;
+}
+.question-num{
+  width:2vw;
+  height:2vw;
+  min-width:30px;
+  min-height:30px;
+  font-size:clamp(11px,.66vw,14px);
+}
+.question-text{
+  font-size:clamp(12px,.75vw,16px);
+}
+.question-meta{
+  margin-top:.25vh;
+  font-size:clamp(10px,.62vw,13px);
+}
+.answer-badge{
+  font-size:clamp(9px,.56vw,12px);
+}
+.mini-btn{
+  min-height:0;
+  height:3.6vh;
+  padding:.3vh .55vw;
+  font-size:clamp(10px,.62vw,13px);
+}
+
+/* Untuk PID 16:9, jangan ubah layout menjadi versi mobile */
+@media (min-aspect-ratio: 1.45/1){
+  .topbar{grid-template-columns:1fr auto 1fr !important;justify-items:stretch !important}
+  .controls{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) !important}
+  .left,.center,.right{display:flex !important}
+  .setup-grid{grid-template-columns:1fr 1fr !important}
+  .btn{width:auto !important}
+}
+
+/* Kompensasi layar 1366x768 / PID yang browser bar-nya masih terlihat */
+@media (max-height: 820px) and (min-aspect-ratio: 1.45/1){
+  .app{grid-template-rows:7vh minmax(0,1fr) 8.5vh 3vh}
+  .topbar{height:7vh}
+  .controls{height:8.5vh}
+  .status{height:3vh}
+  .question-card{top:.8vh;padding:.8vh 1vw}
+  .question{font-size:clamp(23px,3vw,48px)}
+  .timer{width:clamp(105px,11vw,165px);height:clamp(105px,11vw,165px);font-size:clamp(56px,6.4vw,100px)}
+  .side-label{font-size:clamp(34px,4.5vw,72px)}
+  .setup{width:min(78vw,1180px);padding:1vh 1vw}
+  .setup h1{font-size:clamp(24px,2.2vw,38px)}
+  .setup p{font-size:clamp(12px,.9vw,16px)}
+  .privacy{font-size:11px}
+}
+
+
+.question-list{
+  overflow:hidden !important;
+  height:auto !important;
+  max-height:none !important;
+  align-content:start;
+}
+.question-pager{
+  height:4.3vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:.7vw;
+  margin-top:.55vh;
+  font-size:clamp(10px,.65vw,14px);
+  font-weight:900;
+}
+.question-pager .mini-btn{
+  min-width:7.5vw;
+}
+
+</style>
+</head>
+<body>
+<main class="app" id="app">
+<header class="topbar">
+  <div class="brand">🎥 DATA CAM <b>Benar atau Salah?</b></div>
+  <div class="progress" id="progress">Soal 1 dari 12</div>
+  <div class="top-actions">
+    <button class="btn ghost" id="fullscreenBtn" type="button">⛶ Layar Penuh</button>
+    <button class="btn ghost" id="muteBtn" type="button">🔊 Suara Aktif</button>
+  </div>
+</header>
+
+<section class="stage" id="stage">
+  <div class="video-wrap"><video id="video" autoplay playsinline muted></video></div>
+  <div class="fallback" id="fallback"><div><b>Kamera belum aktif.</b><br>Permainan tetap dapat digunakan tanpa kamera.</div></div>
+
+  <div class="side true" id="trueSide"><div class="side-label">BENAR ✓</div></div>
+  <div class="side false" id="falseSide"><div class="side-label">SALAH ✕</div></div>
+  <div class="divider" id="divider"></div>
+
+  <div class="question-card">
+    <div class="q-label" id="qLabel">SIAPKAN POSISI</div>
+    <div class="question hidden-text" id="question">Pernyataan masih disembunyikan</div>
+  </div>
+
+  <div class="timer" id="timer">--</div>
+
+  <div class="reveal" id="reveal" aria-live="assertive">
+    <div class="answer-title" id="answerTitle"></div>
+    <div class="answer-text" id="answerText"></div>
+  </div>
+
+  <div class="overlay" id="setupOverlay">
+    <div class="setup">
+      <h1>DATA CAM 🎥</h1>
+      <p>Pernyataan <b>tidak ditampilkan di awal</b>. Pernyataan dan hitung mundur baru muncul bersama-sama setelah guru menekan <b>Mulai Soal</b>. Jawaban benar baru dibuka ketika timer mencapai <b>0</b>.</p>
+      <div class="setup-grid">
+        <div class="panel">
+          <h3>📷 Kamera PID</h3>
+          <div class="field"><button class="btn primary" id="enableCameraBtn" type="button">Aktifkan Kamera</button></div>
+          <div class="field"><label for="cameraSelect">Pilih kamera</label><select id="cameraSelect"><option value="">Kamera default</option></select></div>
+          <div class="field"><button class="btn ghost" id="mirrorBtn" type="button">🪞 Mirror: Aktif</button></div>
+        </div>
+        <div class="panel">
+          <h3>⚙ Pengaturan</h3>
+          <div class="field"><label for="setupDuration">Waktu menjawab</label><select id="setupDuration"><option value="5">5 detik</option><option value="7" selected>7 detik</option><option value="10">10 detik</option></select></div>
+          <div class="field"><label for="dividerRange">Posisi garis tengah</label><div class="range"><input id="dividerRange" type="range" min="35" max="65" value="50"><output id="dividerOutput">50%</output></div></div>
+          <div class="field"><button class="btn ghost" id="swapSetupBtn" type="button">⇄ Tukar Sisi Benar / Salah</button></div>
+        </div>
+      </div>
+      <div class="privacy">🔒 Kamera hanya menjadi tampilan langsung di perangkat. Halaman ini tidak merekam, mengambil foto, atau mengunggah video.</div>
+      <div class="setup-actions">
+        <button class="btn good" id="startGameBtn" type="button">▶ Masuk Permainan</button>
+        <button class="btn ghost" id="shuffleBtn" type="button">🔀 Acak Soal</button>
+        <button class="btn ghost" id="manageQuestionsSetupBtn" type="button">✏️ Kelola Soal</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="question-manager-overlay hidden" id="questionManagerOverlay">
+    <div class="question-manager" role="dialog" aria-modal="true" aria-labelledby="managerTitle">
+      <div class="manager-head">
+        <div>
+          <h2 id="managerTitle">✏️ Kelola Soal</h2>
+          <p>Buat, edit, dan hapus pernyataan yang akan digunakan dalam permainan.</p>
+        </div>
+        <button class="btn ghost" id="closeManagerBtn" type="button">✕ Tutup</button>
+      </div>
+
+      <div class="manager-grid">
+        <section class="manager-panel">
+          <h3 id="formTitle">Tambah Soal Baru</h3>
+
+          <div class="manager-field">
+            <label for="questionInput">Pernyataan</label>
+            <textarea id="questionInput" maxlength="300" placeholder="Contoh: 4 GB = 4.000 MB"></textarea>
+          </div>
+
+          <div class="manager-field">
+            <label for="answerInput">Jawaban yang benar</label>
+            <select id="answerInput">
+              <option value="true">BENAR</option>
+              <option value="false">SALAH</option>
+            </select>
+          </div>
+
+          <div class="manager-field">
+            <label for="explainInput">Penjelasan jawaban</label>
+            <textarea id="explainInput" maxlength="500" placeholder="Contoh: Benar. 4 × 1.000 MB = 4.000 MB."></textarea>
+          </div>
+
+          <div class="manager-actions">
+            <button class="btn good" id="saveQuestionBtn" type="button">＋ Tambahkan Soal</button>
+            <button class="btn ghost" id="cancelEditBtn" type="button" style="display:none">Batal Edit</button>
+          </div>
+
+          <div class="manager-note">
+            Soal tersimpan di browser perangkat ini. Jika halaman dibuka kembali pada browser yang sama,
+            soal buatan Anda akan tetap tersedia.
+          </div>
+        </section>
+
+        <section class="manager-panel">
+          <div class="manager-head" style="margin-bottom:10px">
+            <h3 style="margin:0">Daftar Soal <span class="manager-count" id="questionCount"></span></h3>
+            <div class="manager-actions" style="margin:0">
+              <button class="btn ghost" id="restoreDefaultBtn" type="button">↺ Kembalikan Soal Bawaan</button>
+            </div>
+          </div>
+          <div class="question-list" id="questionList"></div>
+          <div class="question-pager" id="questionPager">
+            <button class="mini-btn" id="prevQuestionPageBtn" type="button">← Sebelumnya</button>
+            <span id="questionPageInfo">Halaman 1 / 1</span>
+            <button class="mini-btn" id="nextQuestionPageBtn" type="button">Berikutnya →</button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<section class="controls">
+  <div class="left">
+    <button class="btn ghost" id="cameraBtn" type="button">📷 Kamera</button>
+    <button class="btn ghost" id="swapBtn" type="button">⇄ Tukar Sisi</button>
+    <button class="btn ghost" id="settingsBtn" type="button">⚙ Pengaturan</button>
+    <button class="btn ghost" id="manageQuestionsBtn" type="button">✏️ Kelola Soal</button>
+  </div>
+  <div class="center">
+    <div class="timer-setting"><label for="duration">Timer</label><select id="duration"><option value="5">5 dtk</option><option value="7" selected>7 dtk</option><option value="10">10 dtk</option></select></div>
+    <button class="btn primary" id="startBtn" type="button">▶ MULAI SOAL</button>
+  </div>
+  <div class="right">
+    <button class="btn ghost" id="repeatBtn" type="button">↻ Ulangi Soal</button>
+    <button class="btn good" id="nextBtn" type="button" disabled>Soal Berikutnya ➜</button>
+  </div>
+</section>
+
+<footer class="status"><span id="cameraStatus" class="warntext">Kamera belum aktif</span><span>Dirancang untuk sentuhan pada Papan Interaktif Digital (PID).</span></footer>
+</main>
+
+<script>
+(() => {
+  "use strict";
+
+  const DEFAULT_QUESTIONS = [
+    { q: "1 MB = 1.000 KB", answer: true, explain: "Benar. 1 MB sama dengan 1.000 KB." },
+    { q: "1 GB = 100 MB", answer: false, explain: "Salah. 1 GB sama dengan 1.000 MB." },
+    { q: "8 bit = 1 Byte", answer: true, explain: "Benar. 8 bit membentuk 1 Byte." },
+    { q: "3 GB = 3.000 MB", answer: true, explain: "Benar. 3 × 1.000 MB = 3.000 MB." },
+    { q: "5.000 MB = 5 GB", answer: true, explain: "Benar. 5.000 ÷ 1.000 = 5 GB." },
+    { q: "KB lebih besar daripada GB", answer: false, explain: "Salah. GB lebih besar daripada KB." },
+    { q: "1 TB = 1.000 GB", answer: true, explain: "Benar. 1 TB sama dengan 1.000 GB." },
+    { q: "2 GB = 200 MB", answer: false, explain: "Salah. 2 GB sama dengan 2.000 MB." },
+    { q: "500 KB lebih besar daripada 2 MB", answer: false, explain: "Salah. 2 MB = 2.000 KB, jadi 2 MB lebih besar." },
+    { q: "8 GB = 8.000 MB", answer: true, explain: "Benar. 8 × 1.000 MB = 8.000 MB." },
+    { q: "2.500 MB lebih besar daripada 3 GB", answer: false, explain: "Salah. 3 GB = 3.000 MB, jadi 3 GB lebih besar." },
+    { q: "1.500 MB = 1,5 GB", answer: true, explain: "Benar. 1.500 MB ÷ 1.000 = 1,5 GB." }
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  const ui = {
+    video: $("video"), fallback: $("fallback"), progress: $("progress"),
+    trueSide: $("trueSide"), falseSide: $("falseSide"), divider: $("divider"),
+    qLabel: $("qLabel"), question: $("question"), timer: $("timer"),
+    reveal: $("reveal"), answerTitle: $("answerTitle"), answerText: $("answerText"),
+    setupOverlay: $("setupOverlay"), enableCameraBtn: $("enableCameraBtn"), cameraSelect: $("cameraSelect"),
+    mirrorBtn: $("mirrorBtn"), setupDuration: $("setupDuration"), dividerRange: $("dividerRange"), dividerOutput: $("dividerOutput"),
+    swapSetupBtn: $("swapSetupBtn"), startGameBtn: $("startGameBtn"), shuffleBtn: $("shuffleBtn"),
+    cameraBtn: $("cameraBtn"), swapBtn: $("swapBtn"), settingsBtn: $("settingsBtn"),
+    duration: $("duration"), startBtn: $("startBtn"), repeatBtn: $("repeatBtn"), nextBtn: $("nextBtn"),
+    fullscreenBtn: $("fullscreenBtn"), muteBtn: $("muteBtn"), cameraStatus: $("cameraStatus"),
+    manageQuestionsBtn: $("manageQuestionsBtn"), manageQuestionsSetupBtn: $("manageQuestionsSetupBtn"),
+    questionManagerOverlay: $("questionManagerOverlay"), closeManagerBtn: $("closeManagerBtn"),
+    questionInput: $("questionInput"), answerInput: $("answerInput"), explainInput: $("explainInput"),
+    saveQuestionBtn: $("saveQuestionBtn"), cancelEditBtn: $("cancelEditBtn"),
+    questionList: $("questionList"), questionCount: $("questionCount"),
+    restoreDefaultBtn: $("restoreDefaultBtn"), formTitle: $("formTitle"),
+    prevQuestionPageBtn: $("prevQuestionPageBtn"), nextQuestionPageBtn: $("nextQuestionPageBtn"),
+    questionPageInfo: $("questionPageInfo")
+  };
+
+  const STORAGE_KEY = "dataCamCustomQuestionsV1";
+
+  function loadSavedQuestions() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return DEFAULT_QUESTIONS.map(x => ({ ...x }));
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed) || parsed.length === 0) return DEFAULT_QUESTIONS.map(x => ({ ...x }));
+      const clean = parsed
+        .filter(x => x && typeof x.q === "string" && typeof x.answer === "boolean")
+        .map(x => ({
+          q: x.q.trim().slice(0, 300),
+          answer: x.answer,
+          explain: typeof x.explain === "string" ? x.explain.trim().slice(0, 500) : ""
+        }))
+        .filter(x => x.q.length > 0);
+      return clean.length ? clean : DEFAULT_QUESTIONS.map(x => ({ ...x }));
+    } catch (_) {
+      return DEFAULT_QUESTIONS.map(x => ({ ...x }));
+    }
+  }
+
+  function persistQuestions() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(questions));
+    } catch (_) {}
+  }
+
+  let questions = loadSavedQuestions();
+  let index = 0;
+  let countdownId = null;
+  let running = false;
+  let revealed = false;
+  let stream = null;
+  let mirrored = true;
+  let trueOnLeft = true;
+  let muted = false;
+  let audioCtx = null;
+  let editingQuestionIndex = -1;
+  let questionPage = 0;
+  const QUESTIONS_PER_PAGE = 5;
+
+
+  function resetQuestionForm() {
+    editingQuestionIndex = -1;
+    ui.questionInput.value = "";
+    ui.answerInput.value = "true";
+    ui.explainInput.value = "";
+    ui.formTitle.textContent = "Tambah Soal Baru";
+    ui.saveQuestionBtn.textContent = "＋ Tambahkan Soal";
+    ui.cancelEditBtn.style.display = "none";
+  }
+
+  function renderQuestionList() {
+    ui.questionCount.textContent = `(${questions.length})`;
+    ui.questionList.innerHTML = "";
+
+    const totalPages = Math.max(1, Math.ceil(questions.length / QUESTIONS_PER_PAGE));
+    if (questionPage >= totalPages) questionPage = totalPages - 1;
+    if (questionPage < 0) questionPage = 0;
+
+    if (!questions.length) {
+      const empty = document.createElement("div");
+      empty.className = "empty-list";
+      empty.textContent = "Belum ada soal.";
+      ui.questionList.appendChild(empty);
+    } else {
+      const start = questionPage * QUESTIONS_PER_PAGE;
+      const end = Math.min(start + QUESTIONS_PER_PAGE, questions.length);
+
+      for (let i = start; i < end; i++) {
+        const item = questions[i];
+        const row = document.createElement("div");
+        row.className = "question-item";
+
+        const num = document.createElement("div");
+        num.className = "question-num";
+        num.textContent = String(i + 1);
+
+        const main = document.createElement("div");
+        main.className = "question-main";
+
+        const q = document.createElement("div");
+        q.className = "question-text";
+        q.textContent = item.q;
+
+        const meta = document.createElement("div");
+        meta.className = "question-meta";
+
+        const badge = document.createElement("span");
+        badge.className = `answer-badge ${item.answer ? "true" : "false"}`;
+        badge.textContent = item.answer ? "BENAR" : "SALAH";
+
+        const explain = document.createElement("span");
+        explain.textContent = item.explain || "Tanpa penjelasan";
+
+        meta.appendChild(badge);
+        meta.appendChild(explain);
+        main.appendChild(q);
+        main.appendChild(meta);
+
+        const actions = document.createElement("div");
+        actions.className = "item-actions";
+
+        const editBtn = document.createElement("button");
+        editBtn.type = "button";
+        editBtn.className = "mini-btn";
+        editBtn.textContent = "Edit";
+        editBtn.addEventListener("click", () => beginEditQuestion(i));
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.className = "mini-btn danger";
+        deleteBtn.textContent = "Hapus";
+        deleteBtn.addEventListener("click", () => deleteQuestion(i));
+
+        actions.appendChild(editBtn);
+        actions.appendChild(deleteBtn);
+
+        row.appendChild(num);
+        row.appendChild(main);
+        row.appendChild(actions);
+        ui.questionList.appendChild(row);
+      }
+    }
+
+    ui.questionPageInfo.textContent = `Halaman ${questionPage + 1} / ${totalPages}`;
+    ui.prevQuestionPageBtn.disabled = questionPage <= 0;
+    ui.nextQuestionPageBtn.disabled = questionPage >= totalPages - 1;
+  }
+
+  function openQuestionManager() {
+    questionPage = 0;
+    stopCountdown();
+    running = false;
+    ui.duration.disabled = false;
+    ui.questionManagerOverlay.classList.remove("hidden");
+    resetQuestionForm();
+    renderQuestionList();
+    setTimeout(() => ui.questionInput.focus(), 0);
+  }
+
+  function closeQuestionManager() {
+    ui.questionManagerOverlay.classList.add("hidden");
+    resetQuestionForm();
+    if (index >= questions.length) index = 0;
+    hideQuestionForReadyState();
+  }
+
+  function beginEditQuestion(i) {
+    const item = questions[i];
+    if (!item) return;
+    editingQuestionIndex = i;
+    ui.questionInput.value = item.q;
+    ui.answerInput.value = item.answer ? "true" : "false";
+    ui.explainInput.value = item.explain || "";
+    ui.formTitle.textContent = `Edit Soal ${i + 1}`;
+    ui.saveQuestionBtn.textContent = "💾 Simpan Perubahan";
+    ui.cancelEditBtn.style.display = "inline-block";
+    ui.questionInput.focus();
+  }
+
+  function saveQuestionFromForm() {
+    const q = ui.questionInput.value.trim();
+    const explain = ui.explainInput.value.trim();
+    const answer = ui.answerInput.value === "true";
+
+    if (!q) {
+      alert("Pernyataan soal belum diisi.");
+      ui.questionInput.focus();
+      return;
+    }
+
+    const item = {
+      q: q.slice(0, 300),
+      answer,
+      explain: explain.slice(0, 500) || (answer ? "Pernyataan ini benar." : "Pernyataan ini salah.")
+    };
+
+    if (editingQuestionIndex >= 0 && editingQuestionIndex < questions.length) {
+      questions[editingQuestionIndex] = item;
+    } else {
+      questions.push(item);
+    }
+
+    persistQuestions();
+    questionPage = Math.max(0, Math.ceil(questions.length / QUESTIONS_PER_PAGE) - 1);
+    renderQuestionList();
+    resetQuestionForm();
+    index = 0;
+    ui.progress.textContent = `Soal 1 dari ${questions.length}`;
+  }
+
+  function deleteQuestion(i) {
+    if (questions.length <= 1) {
+      alert("Minimal harus ada 1 soal agar permainan dapat dijalankan.");
+      return;
+    }
+    if (!confirm(`Hapus soal ${i + 1}?`)) return;
+    questions.splice(i, 1);
+    persistQuestions();
+    if (index >= questions.length) index = 0;
+    renderQuestionList();
+    resetQuestionForm();
+    hideQuestionForReadyState();
+  }
+
+  function restoreDefaultQuestions() {
+    if (!confirm("Kembalikan seluruh soal ke soal bawaan? Soal buatan yang tersimpan akan diganti.")) return;
+    questions = DEFAULT_QUESTIONS.map(x => ({ ...x }));
+    persistQuestions();
+    index = 0;
+    renderQuestionList();
+    resetQuestionForm();
+    hideQuestionForReadyState();
+  }
+
+  function durationValue() {
+    const v = Number(ui.duration.value);
+    return [5,7,10].includes(v) ? v : 7;
+  }
+
+  function ensureAudio() {
+    const AudioCtor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtor) return;
+    if (!audioCtx) audioCtx = new AudioCtor();
+    if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
+  }
+
+  function beep(freq = 700, ms = 90, volume = 0.055) {
+    if (muted) return;
+    ensureAudio();
+    if (!audioCtx) return;
+    try {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.frequency.value = freq;
+      gain.gain.value = volume;
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + ms / 1000);
+      osc.stop(audioCtx.currentTime + ms / 1000);
+    } catch (_) {}
+  }
+
+  function stopCountdown() {
+    if (countdownId !== null) {
+      clearInterval(countdownId);
+      countdownId = null;
+    }
+  }
+
+  function hideQuestionForReadyState() {
+    stopCountdown();
+    running = false;
+    revealed = false;
+    ui.duration.disabled = false;
+    ui.startBtn.disabled = false;
+    ui.startBtn.textContent = "▶ MULAI SOAL";
+    ui.nextBtn.disabled = true;
+    ui.reveal.classList.remove("show");
+    ui.trueSide.classList.remove("correct", "wrong");
+    ui.falseSide.classList.remove("correct", "wrong");
+    ui.qLabel.textContent = "SIAPKAN POSISI";
+    ui.question.textContent = "Pernyataan masih disembunyikan";
+    ui.question.classList.add("hidden-text");
+    ui.timer.textContent = "--";
+    ui.timer.classList.remove("urgent");
+    ui.progress.textContent = `Soal ${index + 1} dari ${questions.length}`;
+  }
+
+  function startQuestion() {
+    if (running || revealed) return;
+    ensureAudio();
+    running = true;
+    ui.duration.disabled = true;
+    ui.startBtn.disabled = true;
+
+    const item = questions[index];
+    ui.qLabel.textContent = "PERNYATAAN";
+    ui.question.textContent = item.q;
+    ui.question.classList.remove("hidden-text");
+
+    let remaining = durationValue();
+    ui.timer.textContent = String(remaining);
+    ui.timer.classList.toggle("urgent", remaining <= 3);
+    beep(560, 100, .055);
+
+    countdownId = setInterval(() => {
+      remaining -= 1;
+      ui.timer.textContent = String(Math.max(remaining, 0));
+
+      if (remaining > 0 && remaining <= 3) {
+        ui.timer.classList.add("urgent");
+        beep(870, 100, .065);
+      }
+
+      if (remaining <= 0) {
+        stopCountdown();
+        ui.timer.classList.remove("urgent");
+        beep(430, 180, .08);
+        setTimeout(revealAnswer, 160);
+      }
+    }, 1000);
+  }
+
+  function revealAnswer() {
+    running = false;
+    revealed = true;
+    ui.duration.disabled = false;
+
+    const item = questions[index];
+    const correctSide = item.answer ? ui.trueSide : ui.falseSide;
+    const wrongSide = item.answer ? ui.falseSide : ui.trueSide;
+    correctSide.classList.add("correct");
+    wrongSide.classList.add("wrong");
+
+    ui.answerTitle.textContent = `JAWABAN: ${item.answer ? "BENAR ✓" : "SALAH ✕"}`;
+    ui.answerTitle.style.color = item.answer ? "#8ff0ba" : "#ffb1b6";
+    ui.answerText.textContent = item.explain;
+    ui.reveal.classList.add("show");
+    ui.nextBtn.disabled = false;
+    beep(650, 120, .07);
+    setTimeout(() => beep(840, 130, .07), 125);
+  }
+
+  function nextQuestion() {
+    if (!revealed) return;
+    index += 1;
+    if (index >= questions.length) {
+      index = 0;
+      alert("Semua soal selesai. Permainan kembali ke soal pertama.");
+    }
+    hideQuestionForReadyState();
+  }
+
+  function shuffleQuestions() {
+    for (let i = questions.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [questions[i], questions[j]] = [questions[j], questions[i]];
+    }
+    index = 0;
+    hideQuestionForReadyState();
+  }
+
+  function updateSides() {
+    const p = Math.min(65, Math.max(35, Number(ui.dividerRange.value) || 50));
+    ui.divider.style.left = `${p}%`;
+    ui.dividerOutput.value = `${p}%`;
+
+    if (trueOnLeft) {
+      ui.trueSide.style.left = "0";
+      ui.trueSide.style.right = `${100-p}%`;
+      ui.falseSide.style.left = `${p}%`;
+      ui.falseSide.style.right = "0";
+    } else {
+      ui.falseSide.style.left = "0";
+      ui.falseSide.style.right = `${100-p}%`;
+      ui.trueSide.style.left = `${p}%`;
+      ui.trueSide.style.right = "0";
+    }
+  }
+
+  function swapSides() {
+    trueOnLeft = !trueOnLeft;
+    updateSides();
+  }
+
+  async function refreshCameraList() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const cams = devices.filter(d => d.kind === "videoinput");
+      const old = ui.cameraSelect.value;
+      ui.cameraSelect.innerHTML = '<option value="">Kamera default</option>';
+      cams.forEach((cam, i) => {
+        const opt = document.createElement("option");
+        opt.value = cam.deviceId;
+        opt.textContent = cam.label || `Kamera ${i + 1}`;
+        ui.cameraSelect.appendChild(opt);
+      });
+      if ([...ui.cameraSelect.options].some(o => o.value === old)) ui.cameraSelect.value = old;
+    } catch (_) {}
+  }
+
+  function stopCamera() {
+    if (stream) stream.getTracks().forEach(track => track.stop());
+    stream = null;
+    ui.video.srcObject = null;
+    ui.fallback.style.display = "flex";
+    ui.cameraStatus.textContent = "Kamera belum aktif";
+    ui.cameraStatus.className = "warntext";
+    ui.cameraBtn.textContent = "📷 Kamera";
+  }
+
+  async function startCamera(deviceId = "") {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      alert("Browser ini tidak mendukung akses kamera. Permainan tetap dapat digunakan tanpa kamera.");
+      return;
+    }
+    try {
+      stopCamera();
+      const videoConstraints = deviceId
+        ? { deviceId: { exact: deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+        : { facingMode: "user", width: { ideal: 1920 }, height: { ideal: 1080 } };
+
+      stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
+      ui.video.srcObject = stream;
+      await ui.video.play();
+      ui.fallback.style.display = "none";
+      ui.cameraStatus.textContent = "Kamera aktif";
+      ui.cameraStatus.className = "ok";
+      ui.cameraBtn.textContent = "⏹ Matikan Kamera";
+      await refreshCameraList();
+    } catch (err) {
+      stopCamera();
+      ui.cameraStatus.textContent = "Kamera tidak dapat diakses";
+      ui.cameraStatus.className = "bad";
+      alert("Kamera tidak dapat diaktifkan. Pastikan izin kamera diberikan. Jika browser memblokir kamera saat file HTML dibuka langsung, jalankan halaman melalui localhost atau HTTPS.\n\nPesan: " + (err && err.message ? err.message : "Tidak diketahui"));
+    }
+  }
+
+  function toggleMirror() {
+    mirrored = !mirrored;
+    ui.video.style.transform = mirrored ? "scaleX(-1)" : "none";
+    ui.mirrorBtn.textContent = `🪞 Mirror: ${mirrored ? "Aktif" : "Nonaktif"}`;
+  }
+
+  async function toggleFullscreen() {
+    try {
+      if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
+      else await document.exitFullscreen();
+    } catch (_) {}
+  }
+
+
+  ui.manageQuestionsBtn.addEventListener("click", openQuestionManager);
+  ui.manageQuestionsSetupBtn.addEventListener("click", openQuestionManager);
+  ui.closeManagerBtn.addEventListener("click", closeQuestionManager);
+  ui.saveQuestionBtn.addEventListener("click", saveQuestionFromForm);
+  ui.cancelEditBtn.addEventListener("click", resetQuestionForm);
+  ui.restoreDefaultBtn.addEventListener("click", restoreDefaultQuestions);
+  ui.prevQuestionPageBtn.addEventListener("click", () => {
+    if (questionPage > 0) {
+      questionPage--;
+      renderQuestionList();
+    }
+  });
+  ui.nextQuestionPageBtn.addEventListener("click", () => {
+    const totalPages = Math.max(1, Math.ceil(questions.length / QUESTIONS_PER_PAGE));
+    if (questionPage < totalPages - 1) {
+      questionPage++;
+      renderQuestionList();
+    }
+  });
+
+  ui.questionManagerOverlay.addEventListener("click", (event) => {
+    if (event.target === ui.questionManagerOverlay) closeQuestionManager();
+  });
+
+  ui.enableCameraBtn.addEventListener("click", () => startCamera(ui.cameraSelect.value));
+  ui.cameraSelect.addEventListener("change", () => startCamera(ui.cameraSelect.value));
+  ui.mirrorBtn.addEventListener("click", toggleMirror);
+  ui.dividerRange.addEventListener("input", updateSides);
+  ui.swapSetupBtn.addEventListener("click", swapSides);
+  ui.swapBtn.addEventListener("click", swapSides);
+  ui.shuffleBtn.addEventListener("click", shuffleQuestions);
+
+  ui.startGameBtn.addEventListener("click", () => {
+    ui.duration.value = ui.setupDuration.value;
+    ui.setupOverlay.classList.add("hidden");
+    hideQuestionForReadyState();
+  });
+
+  ui.setupDuration.addEventListener("change", () => {
+    ui.duration.value = ui.setupDuration.value;
+    if (!running) hideQuestionForReadyState();
+  });
+
+  ui.duration.addEventListener("change", () => {
+    ui.setupDuration.value = ui.duration.value;
+    if (!running && !revealed) hideQuestionForReadyState();
+  });
+
+  ui.startBtn.addEventListener("click", startQuestion);
+  ui.repeatBtn.addEventListener("click", hideQuestionForReadyState);
+  ui.nextBtn.addEventListener("click", nextQuestion);
+
+  ui.cameraBtn.addEventListener("click", () => {
+    if (stream) stopCamera();
+    else startCamera(ui.cameraSelect.value);
+  });
+
+  ui.settingsBtn.addEventListener("click", () => {
+    stopCountdown();
+    running = false;
+    ui.duration.disabled = false;
+    ui.setupOverlay.classList.remove("hidden");
+  });
+
+  ui.fullscreenBtn.addEventListener("click", toggleFullscreen);
+  document.addEventListener("fullscreenchange", () => {
+    ui.fullscreenBtn.textContent = document.fullscreenElement ? "⛶ Keluar Layar Penuh" : "⛶ Layar Penuh";
+  });
+
+  ui.muteBtn.addEventListener("click", () => {
+    muted = !muted;
+    ui.muteBtn.textContent = muted ? "🔇 Suara Mati" : "🔊 Suara Aktif";
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (!ui.setupOverlay.classList.contains("hidden") || !ui.questionManagerOverlay.classList.contains("hidden")) return;
+    const tag = document.activeElement && document.activeElement.tagName;
+    if (["INPUT","SELECT","TEXTAREA"].includes(tag)) return;
+    if (event.code === "Space") {
+      event.preventDefault();
+      startQuestion();
+    } else if (event.key === "ArrowRight" && !ui.nextBtn.disabled) {
+      nextQuestion();
+    } else if (event.key.toLowerCase() === "r") {
+      hideQuestionForReadyState();
+    }
+  });
+
+  window.addEventListener("beforeunload", stopCamera);
+  renderQuestionList();
+  updateSides();
+  hideQuestionForReadyState();
+})();
+</script>
+</body>
+</html>
